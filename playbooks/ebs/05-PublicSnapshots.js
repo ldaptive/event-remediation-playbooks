@@ -32,10 +32,13 @@ module.exports.run = (event) => new Promise(async (resolve) => {
     var item = event.event.detail.requestParameters;
     if (item.createVolumePermission.add) {
         if (item.createVolumePermission.add.items[0].group && item.createVolumePermission.add.items[0].group == 'all') {
-            await helper.awsApiCall(credential, 'EC2', 'modifySnapshotAttribute', { SnapshotId: item.snapshotId, 
-                Attribute: 'createVolumePermission', OperationType: 'remove', GroupNames: ['all'] 
+            await helper.awsApiCall(credential, 'EC2', 'modifySnapshotAttribute', { 
+                SnapshotId: item.snapshotId, 
+                Attribute: 'createVolumePermission', 
+                OperationType: 'remove', 
+                GroupNames: ['all'] 
             });
         }
     }
-    resolve({ remediationDone: true, data: table });
+    resolve({ remediationDone: true, data: item });
 });
