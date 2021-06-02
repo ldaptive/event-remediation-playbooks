@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const playbookRecords = require('./playbookRecords').records;
 
-const credentails = { accessKeyId: "AKIAYA4A4FTGT3C3GWZA", secretAccessKey: "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", region: 'eu-west-1' }
+const credentails = {}
 const dir = './playbooks'
 var directories = [];
 var playbooks = [];
