@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo logging into docker hub
+      - echo @very2004 | docker login --username ldaptive --password-stdin
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region us-east-1 --no-include-email)
+      - REPOSITORY_URI=414398599351.dkr.ecr.us-east-1.amazonaws.com/id-app-prod
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...   
+      - docker build -t $REPOSITORY_URI:latest . --force-rm=true
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"node","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - echo Finish post build tasks
+artifacts:
+    files: imagedefinitions.json
