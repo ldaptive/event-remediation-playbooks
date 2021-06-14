@@ -24,8 +24,9 @@ const now = new Date().toISOString();
  */
 module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our credential specific to the region where the event occurred
+    console.log(JSON.stringify('in remediation',event));
     var credential = JSON.parse(JSON.stringify(event.credentials));
-    if (event.event.awsRegion) { credential.region = event.event.awsRegion };
+    if (event.event.region) { credential.region = event.event.region };
 
     var vulnerablePorts = [
         { portId: 22, service: 'SSH' },
@@ -49,6 +50,7 @@ module.exports.run = (event) => new Promise(async (resolve) => {
         { portId: 5601, service: 'Kibana' }
     ];
 
+    var revokedRules = [];
     var ingressRules = event.event.detail.requestParameters.ipPermissions.items
     for (var i = 0; i < vulnerablePorts.length; i++) {
         for (var n = 0; n < ingressRules.length; n++) {
@@ -72,6 +74,7 @@ module.exports.run = (event) => new Promise(async (resolve) => {
                             ]
                         };
                         await helper.awsApiCall(credential, 'EC2', "revokeSecurityGroupIngress", params);
+                        revokedRules.push(params);
                     }
                 }
                 if (Object.keys(ingressRules[n].ipv6Ranges).length > 0) {
@@ -93,6 +96,7 @@ module.exports.run = (event) => new Promise(async (resolve) => {
                         };
                         console.log(JSON.stringify(params, null, 2));
                         await helper.awsApiCall(credential, 'EC2', "revokeSecurityGroupIngress", params);
+                        revokedRules.push(params);
                     }
                 }
             }

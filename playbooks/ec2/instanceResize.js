@@ -24,7 +24,7 @@ const now = new Date().toISOString();
 module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
-    if (event.event.awsRegion) { credential.region = event.event.awsRegion };
+    if (event.event.region) { credential.region = event.event.region };
 
     var url = `api/ec2/instances/${event.accountDetails.accountId}?RecordStatus=Active&OverProvisioned=true&UsageType=On Demand&fields=Tags,UsageType,RecommendedInstanceType,InstanceType,StateChange,Platform,LaunchTime,MaxCpu`;
 

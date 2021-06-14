@@ -27,7 +27,7 @@ const now = new Date().toISOString();
 module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
-    if (event.event.awsRegion) { credential.region = event.event.awsRegion };
+    if (event.event.region) { credential.region = event.event.region };
 
     var days = 180
     var pastDate = new Date(new Date().setDate(dte.getDate() - days)).toISOString();

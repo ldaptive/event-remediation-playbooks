@@ -25,7 +25,7 @@ const now = new Date().toISOString();
 module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
-    if (event.event.awsRegion) { credential.region = event.event.awsRegion };
+    if (event.event.region) { credential.region = event.event.region };
 
     var Instances = [];
     event.event.detail.responseElements.instancesSet.items.forEach(instance => {
