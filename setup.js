@@ -3,7 +3,15 @@ const fs = require('fs');
 const path = require('path');
 const playbookRecords = require('./playbookRecords').records;
 
-const credentails = {}
+/**
+ * add in your credentials for the the account hosting Intelligent Discovery
+ */
+const credentails = { 
+    accessKeyId: '', //add your access key
+    secretAccessKey: '', //add your secret key
+    region: '' //region where Intelligent Discovery is deployed
+};
+
 const dir = './playbooks'
 var directories = [];
 var playbooks = [];
