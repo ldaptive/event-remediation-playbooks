@@ -6,11 +6,15 @@ const playbookRecords = require('./playbookRecords').records;
 /**
  * add in your credentials for the the account hosting Intelligent Discovery
  */
-const credentails = { 
+
+const credentails = {
     accessKeyId: '', //add your access key
     secretAccessKey: '', //add your secret key
+    sessionToken: '', // only use if leveraging AWS SSO credentials
     region: '' //region where Intelligent Discovery is deployed
 };
+
+if (credentails.sessionToken.length === 0) { delete credentails.sessionToken };
 
 const dir = './playbooks'
 var directories = [];
