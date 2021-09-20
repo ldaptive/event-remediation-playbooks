@@ -2,7 +2,8 @@
  * =======================================================================
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
  * Created: 2021-05-12
- * Description: removes expired certificates
+ * Description: removes expired AWS certificates from ACM
+ * ControlID: ACM.01
  * Compliance Frameworks: NIST, PCI-DSS
  * -----------------------  AWS Event Details  ---------------------------
  * eventSource: N/A
@@ -31,12 +32,14 @@ module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our API endpoint to get data from IntelligentDiscovery
     var url = `api/acm/certificates/${event.accountDetails.accountId}?RecordStatus=Active&NotAfter[lt]=${now}&fields=NotAfter,Region,CertificateArn,DomainName`;
 
-    // calling the api endpoint
+    // calling the api endpoint and formatting our data;
     var data = await helper.apiQuery(url);
-
+    data = JSON.parse(JSON.stringify(data));
+    
     for (var i = 0; i < data.length; i++) {
         // setting credential specific for region of the expired certificate
         var regionCredential = JSON.parse(JSON.stringify(credential));
+        
         regionCredential.region = data[i].Region;
         await helper.awsApiCall(regionCredential, 'ACM', 'deleteCertificate', { CertificateArn: data[i].CertificateArn });
     }

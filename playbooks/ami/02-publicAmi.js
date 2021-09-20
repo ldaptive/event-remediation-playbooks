@@ -3,6 +3,7 @@
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
  * Created: 2021-05-12
  * Description: Changes Public AMI to Private AMI
+ * ControlID: AMI.02
  * Compliance Frameworks: NIST, GDPR
  * -----------------------  AWS Event Details  ---------------------------
  * eventSource: ec2.amazonaws.com
@@ -35,14 +36,17 @@ module.exports.run = (event) => new Promise(async (resolve) => {
 
         // calling the api endpoint
         var data = await helper.apiQuery(url);
+        data = JSON.parse(JSON.stringify(data));
 
         for (var i = 0; i < data.length; i++) {
             // setting credential specific for region of the expired certificate
             var regionCredential = JSON.parse(JSON.stringify(credential));
+
             regionCredential.region = data[i].Region;
             await helper.awsApiCall(regionCredential, 'EC2', 'modifyImageAttribute', { ImageId: data[i].ImageId, OperationType: 'remove', LaunchPermission: { Remove: [{ Group: 'all' }] } });
         }
         resolve({ remediationDone: true, data: data });
+
     } else if (event.playbook.type === 'event') {
         var item = event.event.detail.requestParameters;
         if (item.attributeType === 'launchPermission' && item.launchPermission.add.items[0].group && item.launchPermission.add.items[0].group === 'all') {
