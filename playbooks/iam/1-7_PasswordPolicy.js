@@ -2,8 +2,8 @@
  * =======================================================================
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
  * Created: 2021-05-12
- * Description: Resize over provisioned EC2 Instances
- * Compliance Frameworks: Cost Savings
+ * Description: Set password policy on account
+ * Compliance Frameworks: CIS, NIST, AWS
  * -----------------------  AWS Event Details  ---------------------------
  * eventSource: N/A
  * eventName: N/A
@@ -14,37 +14,37 @@
 const AWS = require('aws-sdk');
 const helper = require('./helper');
 const now = new Date().toISOString();
+
 /**
  * @param {Object} event the entire payload being passed from step function
+ * @param {Object} event.accountDetails the information specific to this account
  * @param {Object} event.credentials the credentials needed to interact with the offending account
  * @param {Object} event.event the cloudwatch alarm event that was passed
  * @param {Object} event.playbook the information of what steps should be taken on this event
  * @param {Object} event.userDetails the user information of who triggered the event (if user lookup is set in playbook)
  */
+
 module.exports.run = (event) => new Promise(async (resolve) => {
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
-    if (event.event.region) { credential.region = event.event.region };
+    credential.region = 'us-east-1';
 
-    var url = `api/ec2/instances/${event.accountDetails.accountId}?RecordStatus=Active&OverProvisioned=true&UsageType=On Demand&fields=Tags,UsageType,RecommendedInstanceType,InstanceType,StateChange,Platform,LaunchTime,MaxCpu`;
+    // setting our password policy settings
+    var passwordPolicy = {
+        AllowUsersToChangePassword: true,
+        HardExpiry: true,
+        MaxPasswordAge: 90,
+        MinimumPasswordLength: 14,
+        PasswordReusePrevention: 24,
+        RequireLowercaseCharacters: true,
+        RequireNumbers: true,
+        RequireSymbols: true,
+        RequireUppercaseCharacters: true
+    }
 
-    //calling our API endpoint to get the data
-    var data = await helper.apiQuery(url);
+    // making the api call to set the account password policy
+    await helper.awsApiCall(credential, 'IAM', 'updateAccountPasswordPolicy', passwordPolicy);
 
-    var resizableInstances = [];
-    data.forEach(x => {
-        // specify tags that you would want to look for to ignore deletion
-        if (x.Tags) {
-            if (x.Tags.filter(f => f.Key === 'ignoreResize').length === 0 &&
-                x.Tags.filter(f => f.Key === 'IncidentResponse').length === 0) {
-                resizableInstances.push(x);
-            }
-        } else {
-            resizableInstances.push(x);
-        }
-        // validate for a specific needed tag that would flag not to be deleted:
-    });
-
-    //var response = await helper.awsApiCall(credential, 'EC2', 'createTags', params);
-    resolve({ remediationDone: true, data: response });
+    // returning back to our workflow
+    resolve({ remediationDone: true, data: 'Account password policy has been set' });
 });

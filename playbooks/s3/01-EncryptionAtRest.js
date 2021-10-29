@@ -25,6 +25,7 @@ const now = new Date().toISOString();
  */
 
 module.exports.run = (event) => new Promise(async (resolve) => {
+    console.log('i am in the event');
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
     if (event.event.region) { credential.region = event.event.region };
@@ -35,14 +36,16 @@ module.exports.run = (event) => new Promise(async (resolve) => {
 
         // calling the api endpoint
         var data = await helper.apiQuery(url);
-
+        console.log('here is my data from query', JSON.stringify(data));
         for (var i = 0; i < data.length; i++) {
             // setting credential specific for region of the expired certificate
             var regionCredential = JSON.parse(JSON.stringify(credential));
             regionCredential.region = data[i].Region;
 
             // Setting basic encryption on the bucket
-            await helper.awsApiCall(regionCredential, 'S3', 'putBucketEncryption', { Bucket: bucket.bucketName, ServerSideEncryptionConfiguration: { Rules: [{ ApplyServerSideEncryptionByDefault: { SSEAlgorithm: "AES256" } }] } });
+            console.log('setting the encryption')
+            var info = await helper.awsApiCall(regionCredential, 'S3', 'putBucketEncryption', { Bucket: data[i].Name, ServerSideEncryptionConfiguration: { Rules: [{ ApplyServerSideEncryptionByDefault: { SSEAlgorithm: "AES256" } }] } });
+            console.log('here is the response from change', info)
         }
         resolve({ remediationDone: true, data: data });
     } else if (event.playbook.type === 'event') {

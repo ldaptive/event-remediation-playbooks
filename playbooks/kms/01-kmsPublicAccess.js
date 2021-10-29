@@ -29,6 +29,7 @@ module.exports.run = (event) => new Promise(async (resolve) => {
     var credential = JSON.parse(JSON.stringify(event.credentials));
     if (event.event.region) { credential.region = event.event.region };
 
+
     if (event.event.detail.eventName === 'PutKeyPolicy') {
         var item = event.event.detail.requestParameters
 

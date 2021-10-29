@@ -1,12 +1,13 @@
 /**
  * =======================================================================
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
- * Created: 2021-05-12
- * Description: Sets KMS Key for automatic rotation
- * Compliance Frameworks: NIST, GDPR
+ * Created: 2021-10-10
+ * Description: Removes public access for KMS key
+ * Compliance Frameworks: NIST, PCI-DSS, AWS
  * -----------------------  AWS Event Details  ---------------------------
- * eventSource: kms.amazonaws.com
- * eventName: CreateKey, DisableKeyRotation
+ * eventSource: lambda.amazonaws.com
+ * eventName: CreateFunction20150331, UpdateFunctionConfiguration20150331v2,
+ *            UpdateFunctionConfiguration20150331v2
  * =======================================================================
  */
 
@@ -14,6 +15,7 @@
 const AWS = require('aws-sdk');
 const helper = require('./helper');
 const now = new Date().toISOString();
+const latestRuntime = 'nodejs14.x';
 
 /**
  * @param {Object} event the entire payload being passed from step function
@@ -31,32 +33,30 @@ module.exports.run = (event) => new Promise(async (resolve) => {
 
     if (event.playbook.type === 'schedule') {
         // setting our API endpoint to get data from IntelligentDiscovery
-        var url = `api/kms/keys/${event.accountDetails.accountId}?RecordStatus=Active&KeyRotationEnabled=false&fields=KeyId,Region,KeyRotationEnabled,Arn`;
+        var url = `api/lambda/functions/${event.accountDetails.accountId}?RecordStatus=Active&Runtime[startswith]=nodejs&fields=FunctionName,Runtime,FunctionArn,Region`;
 
         // calling the api endpoint
         var data = await helper.apiQuery(url);
-        console.log('here is my data from query', JSON.stringify(data));
-        for (var i = 0; i < data.length; i++) {
-            // setting credential specific for region of the expired certificate
-            var regionCredential = JSON.parse(JSON.stringify(credential));
-            regionCredential.region = data[i].Region;
 
-            // Setting basic encryption on the bucket
-            console.log('setting key rotation');
-            var info = await helper.awsApiCall(regionCredential, 'KMS', 'enableKeyRotation', { KeyId: data[i].Arn });
-            console.log('here is the response from change', info)
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].Runtime !== latestRuntime) {
+                // setting credential specific for region of the expired certificate
+                var regionCredential = JSON.parse(JSON.stringify(credential));
+                regionCredential.region = data[i].Region;
+
+                console.log('attempting to resolve function', data[i]);
+                // Setting basic encryption on the bucket
+                await helper.awsApiCall(regionCredential, 'Lambda', 'updateFunctionConfiguration', { FunctionName: data[i].FunctionArn, Runtime: latestRuntime });
+            }
         }
         resolve({ remediationDone: true, data: data });
     } else if (event.playbook.type === 'event') {
+        // getting our eventObject
+        var lambdaFunction = event.event.detail.requestParameters;
 
-        if (event.event.detail.eventName === 'DisableKeyRotation') {
-            var item = event.event.detail.requestParameters
-
-        } else if (event.event.detail.eventName === 'CreateKey') {
-            var item = event.event.detail.responseElements.keyMetadata;
-        }
-
-        await helper.awsApiCall(credential, 'KMS', 'enableKeyRotation', { KeyId: item.keyId });
-        resolve({ remediationDone: true, data: item });
+        // checking if encryption is currently enabled
+        await helper.awsApiCall(credential, 'Lambda', 'updateFunctionConfiguration', { FunctionName: lambdaFunction.FunctionArn, Runtime: latestRuntime });
+        resolve({ remediationDone: true, data: lambdaFunction });
     }
 });
+

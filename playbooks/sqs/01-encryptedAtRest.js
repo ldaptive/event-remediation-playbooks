@@ -2,11 +2,11 @@
  * =======================================================================
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
  * Created: 2021-05-12
- * Description: Sets KMS Key for automatic rotation
- * Compliance Frameworks: NIST, GDPR
+ * Description: Sets S3 bucket to be encrypted at rest
+ * Compliance Frameworks: NIST, HIPPA, GDPR, PCI-DSS
  * -----------------------  AWS Event Details  ---------------------------
- * eventSource: kms.amazonaws.com
- * eventName: CreateKey, DisableKeyRotation
+ * eventSource: sqs.amazonaws.com
+ * eventName: CreateQueue
  * =======================================================================
  */
 
@@ -25,13 +25,14 @@ const now = new Date().toISOString();
  */
 
 module.exports.run = (event) => new Promise(async (resolve) => {
+    console.log('i am in the event');
     // setting our credential specific to the region where the event occurred
     var credential = JSON.parse(JSON.stringify(event.credentials));
     if (event.event.region) { credential.region = event.event.region };
 
     if (event.playbook.type === 'schedule') {
         // setting our API endpoint to get data from IntelligentDiscovery
-        var url = `api/kms/keys/${event.accountDetails.accountId}?RecordStatus=Active&KeyRotationEnabled=false&fields=KeyId,Region,KeyRotationEnabled,Arn`;
+        var url = `api/s3/buckets/${event.accountDetails.accountId}?RecordStatus=Active&Encryption=None&fields=Name,Encryption,Region`;
 
         // calling the api endpoint
         var data = await helper.apiQuery(url);
@@ -42,21 +43,26 @@ module.exports.run = (event) => new Promise(async (resolve) => {
             regionCredential.region = data[i].Region;
 
             // Setting basic encryption on the bucket
-            console.log('setting key rotation');
-            var info = await helper.awsApiCall(regionCredential, 'KMS', 'enableKeyRotation', { KeyId: data[i].Arn });
+            console.log('setting the encryption')
+            var info = await helper.awsApiCall(regionCredential, 'S3', 'putBucketEncryption', { Bucket: bucket.bucketName, ServerSideEncryptionConfiguration: { Rules: [{ ApplyServerSideEncryptionByDefault: { SSEAlgorithm: "AES256" } }] } });
             console.log('here is the response from change', info)
         }
         resolve({ remediationDone: true, data: data });
     } else if (event.playbook.type === 'event') {
+        // getting our eventObject
+        var bucket = event.event.detail.requestParameters;
 
-        if (event.event.detail.eventName === 'DisableKeyRotation') {
-            var item = event.event.detail.requestParameters
+        // checking if encryption is currently enabled
+        var encryption = await helper.awsApiCall(credential, 'S3', 'getBucketEncryption', { Bucket: bucket.bucketName });
 
-        } else if (event.event.detail.eventName === 'CreateKey') {
-            var item = event.event.detail.responseElements.keyMetadata;
+        // If error returned from API call then encryption is not enabled
+        if (encryption.success === false) {
+            // Setting basic encryption on the bucket
+            await helper.awsApiCall(credential, 'S3', 'putBucketEncryption', { Bucket: bucket.bucketName, ServerSideEncryptionConfiguration: { Rules: [{ ApplyServerSideEncryptionByDefault: { SSEAlgorithm: "AES256" } }] } });
+            resolve({ remediationDone: true, data: table });
+        } else {
+            // Encryption is enabled so nothing to change
+            resolve({ remediationDone: false, data: 'encryption has been enabled on this bucket' });
         }
-
-        await helper.awsApiCall(credential, 'KMS', 'enableKeyRotation', { KeyId: item.keyId });
-        resolve({ remediationDone: true, data: item });
     }
 });
