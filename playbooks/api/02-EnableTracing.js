@@ -3,11 +3,11 @@
  * Author: IntelligentDiscovery Support - www.intelligentdiscovery.io
  * Created: 2021-05-12
  * Description: Changes Public AMI to Private AMI
- * ControlID: AMI.02
- * Compliance Frameworks: NIST, GDPR
+ * ControlID: API.02
+ * Compliance Frameworks: NIST
  * -----------------------  AWS Event Details  ---------------------------
- * eventSource: ec2.amazonaws.com
- * eventName: ModifyImageAttribute
+ * eventSource: apigateway.amazonaws.com
+ * eventName: CreateStage
  * =======================================================================
  */
 
