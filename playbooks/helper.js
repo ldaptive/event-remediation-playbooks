@@ -12,10 +12,10 @@ const AWS = require('aws-sdk');
 const { appendFile } = require('fs');
 
 /**
- * @param {Object} credentials required for interacting with AWS directly these should be available from the event
- * @param {String} awsClass AWS Class we want to Interact with (example: EC2, ECS, Lambda)
- * @param {String} awsMethod AWS Class method that should be carried out (example: describeInstances)
- * @param {Object} params Optional - Passed if required for the method. Look to leverage script builder to get required parameters
+ * @param {Object} credentials      required for interacting with AWS directly these should be available from the event
+ * @param {String} awsClass         AWS Class we want to Interact with (example: EC2, ECS, Lambda)
+ * @param {String} awsMethod        AWS Class method that should be carried out (example: describeInstances)
+ * @param {Object} params           Optional - Passed if required for the method. Look to leverage script builder to get required parameters
  * @returns {Object}
  */
 module.exports.awsApiCall = (credentials, awsClass, awsMethod, params) => new Promise((resolve) => {
@@ -75,6 +75,11 @@ var appEndpoint = () => new Promise((resolve) => {
 });
 
 
+/**
+ * 
+ * @param {string} url      api endpoint that we will query
+ * @returns {object}        data object
+ */
 module.exports.apiQuery = (url) => new Promise(async (resolve) => {
     console.log('i am calling access key')
     var key = await accessKey();
